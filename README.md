@@ -2,7 +2,12 @@
 
 A full-stack MERN application for processing and analyzing bank statements with AI-powered transaction categorization and interactive dashboards.
 
-## 🚀 Features
+## Screenshots
+![Dashboard page](./screenshoot/dashboard.png)
+![Dashboard page](./screenshoot/dashboard1.png)
+![Upload page](./screenshoot/upload.png)
+
+## Features
 
 - **Multi-format File Upload**: Support for CSV, TXT, PDF, and Excel bank statements
 - **AI-Powered Processing**: Automatic transaction extraction and categorization using OpenAI
@@ -11,7 +16,7 @@ A full-stack MERN application for processing and analyzing bank statements with 
 - **Transaction Management**: View, edit, and manage all processed transactions
 - **Responsive Design**: Modern, mobile-friendly user interface
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Frontend
 - **React 18** - Modern UI library
@@ -38,11 +43,11 @@ Before running this application, make sure you have the following installed:
 - **MongoDB** (local installation or MongoDB Atlas)
 - **OpenAI API Key** (for AI-powered transaction processing)
 
-## 🔧 Installation & Setup
+## Installation & Setup
 
 ### 1. Clone the Repository
 ```bash
-git clone <repository-url>
+git clone https://github.com/RahulkrWD/AI-Finance-Tracker.git
 cd Flame_cloud
 ```
 
@@ -83,12 +88,7 @@ npm start
 cd client
 npm run dev
 ```
-
-The application will be available at:
-- Frontend: `http://localhost:5173`
-- Backend API: `http://localhost:5000`
-
-## 📁 Project Structure
+## Project Structure
 
 ```
 Flame_cloud/
@@ -224,7 +224,7 @@ If the OpenAI API is unavailable, the system falls back to regex-based extractio
 - Input validation on all endpoints
 - Error handling to prevent information leakage
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
