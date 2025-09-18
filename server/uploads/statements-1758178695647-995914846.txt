@@ -1,0 +1,24 @@
+MONTHLY STATEMENT
+Account Number: XXXX-XXXX-XXXX-1234
+Statement Period: June 1, 2023 - June 30, 2023
+
+TRANSACTION DETAILS:
+
+Date        Description                     Amount      Type
+-----------------------------------------------------------------
+06/01/2023  Payroll Deposit                 $3,500.00   Credit
+06/03/2023  Supermarket                     $-78.45     Debit
+06/05/2023  Internet Service Provider       $-59.99     Debit
+06/07/2023  Coffee Shop                     $-4.75      Debit
+06/10/2023  Transfer to Savings             $-500.00    Transfer
+06/12/2023  Restaurant                      $-42.80     Debit
+06/15/2023  Water Bill                      $-45.50     Debit
+06/18/2023  Gas Station                     $-38.25     Debit
+06/20/2023  Online Shopping - Electronics   $-129.99    Debit
+06/22/2023  Pharmacy                        $-22.50     Debit
+06/25/2023  Dividend Payment                $15.75      Credit
+06/28/2023  Mortgage Payment                $-1,450.00  Debit
+06/30/2023  ATM Withdrawal                  $-100.00    Debit
+
+OPENING BALANCE: $2,345.67
+CLOSING BALANCE: $3,389.19

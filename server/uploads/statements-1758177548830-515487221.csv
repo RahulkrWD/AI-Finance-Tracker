@@ -1,0 +1,8 @@
+Date,Description,Amount,Type
+2023-06-01,Salary Deposit,5000.00,Credit
+2023-06-05,Grocery Store,-120.50,Debit
+2023-06-10,Electric Bill,-85.75,Debit
+2023-06-15,Restaurant,-45.20,Debit
+2023-06-20,Gas Station,-35.40,Debit
+2023-06-25,Online Shopping,-65.99,Debit
+2023-06-30,Interest,2.35,Credit
