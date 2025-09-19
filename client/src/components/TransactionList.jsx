@@ -114,35 +114,54 @@ const TransactionList = ({ transactions }) => {
 
   // Filtering and sorting
   useEffect(() => {
+    if (!transactions || !Array.isArray(transactions)) {
+      setFilteredTransactions([]);
+      return;
+    }
+    
     let result = [...transactions];
 
     // Apply filters
-    if (filters.category) {
-      result = result.filter((item) => item.category === filters.category);
+    if (filters.category && filters.category.trim() !== "") {
+      result = result.filter((item) => 
+        item.category && item.category.trim().toLowerCase() === filters.category.trim().toLowerCase()
+      );
     }
 
-    if (filters.type) {
-      result = result.filter((item) => item.type === filters.type);
+    if (filters.type && filters.type.trim() !== "") {
+      result = result.filter((item) => 
+        item.type && item.type.trim().toLowerCase() === filters.type.trim().toLowerCase()
+      );
     }
 
-    if (filters.dateFrom) {
+    if (filters.dateFrom && filters.dateFrom.trim() !== "") {
       const fromDate = new Date(filters.dateFrom);
-      result = result.filter((item) => new Date(item.date) >= fromDate);
+      if (!isNaN(fromDate.getTime())) {
+        result = result.filter((item) => {
+          const itemDate = new Date(item.date);
+          return !isNaN(itemDate.getTime()) && itemDate >= fromDate;
+        });
+      }
     }
 
-    if (filters.dateTo) {
+    if (filters.dateTo && filters.dateTo.trim() !== "") {
       const toDate = new Date(filters.dateTo);
-      toDate.setHours(23, 59, 59, 999); // End of day
-      result = result.filter((item) => new Date(item.date) <= toDate);
+      if (!isNaN(toDate.getTime())) {
+        toDate.setHours(23, 59, 59, 999); // End of day
+        result = result.filter((item) => {
+          const itemDate = new Date(item.date);
+          return !isNaN(itemDate.getTime()) && itemDate <= toDate;
+        });
+      }
     }
 
-    if (filters.searchTerm) {
-      const searchLower = filters.searchTerm.toLowerCase();
+    if (filters.searchTerm && filters.searchTerm.trim() !== "") {
+      const searchLower = filters.searchTerm.toLowerCase().trim();
       result = result.filter(
         (item) =>
-          item.description.toLowerCase().includes(searchLower) ||
-          item.merchant?.toLowerCase().includes(searchLower) ||
-          item.category.toLowerCase().includes(searchLower)
+          (item.description && item.description.toLowerCase().includes(searchLower)) ||
+          (item.merchant && item.merchant.toLowerCase().includes(searchLower)) ||
+          (item.category && item.category.toLowerCase().includes(searchLower))
       );
     }
 
