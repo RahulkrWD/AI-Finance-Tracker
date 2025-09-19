@@ -48,7 +48,7 @@ Before running this application, make sure you have the following installed:
 ### 1. Clone the Repository
 ```bash
 git clone https://github.com/RahulkrWD/AI-Finance-Tracker.git
-cd Flame_cloud
+cd AI-Finance-Tracker
 ```
 
 ### 2. Backend Setup
@@ -91,16 +91,25 @@ npm run dev
 ## Project Structure
 
 ```
-Flame_cloud/
+AI-Finance-Tracker/
 ├── client/                 # React frontend
 │   ├── src/
 │   │   ├── components/     # React components
-│   │   ├── styles/         # CSS files
+│   │   ├── syles/          # CSS files (note: folder name as is)
+│   │   ├── App.css         # Main app styles
 │   │   ├── App.jsx         # Main App component
 │   │   └── main.jsx        # Entry point
 │   ├── public/             # Static assets
-│   └── package.json
+│   │   ├── index.html      # HTML template
+│   │   ├── logo.svg        # App logo
+│   │   └── manifest.json   # PWA manifest
+│   ├── index.html          # Vite HTML template
+│   ├── package.json        # Frontend dependencies
+│   ├── vite.config.js      # Vite configuration
+│   └── vercel.json         # Vercel deployment config
 ├── server/                 # Express backend
+│   ├── config/             # Configuration files
+│   │   └── db.js           # Database configuration
 │   ├── models/             # MongoDB models
 │   │   ├── Statement.js    # File upload model
 │   │   └── Transaction.js  # Transaction model
@@ -110,11 +119,16 @@ Flame_cloud/
 │   │   └── transactions.js # Transaction CRUD operations
 │   ├── uploads/            # Uploaded files storage
 │   ├── index.js            # Server entry point
-│   └── package.json
+│   ├── package.json        # Backend dependencies
+│   └── vercel.json         # Vercel deployment config
+├── screenshoot/            # Application screenshots
+│   ├── dashboard.png       # Dashboard screenshot
+│   ├── dashboard1.png      # Dashboard screenshot 2
+│   └── upload.png          # Upload page screenshot
 ├── sample_bank_statement_1.csv  # Sample data files
 ├── sample_bank_statement_2.csv
 ├── sample_bank_statement_3.txt
-└── README.md
+└── README.md               # Project documentation
 ```
 
 ## 🎯 Usage
