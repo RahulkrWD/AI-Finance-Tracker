@@ -1,10 +1,6 @@
 const mongoose = require('mongoose');
 
 const StatementSchema = new mongoose.Schema({
-  filename: {
-    type: String,
-    required: true
-  },
   originalFilename: {
     type: String,
     required: true
@@ -15,6 +11,14 @@ const StatementSchema = new mongoose.Schema({
   },
   fileSize: {
     type: Number,
+    required: true
+  },
+  fileContent: {
+    type: Buffer,
+    required: true
+  },
+  mimeType: {
+    type: String,
     required: true
   },
   uploadDate: {

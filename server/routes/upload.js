@@ -2,26 +2,10 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
 const Statement = require('../models/Statement');
 
-// Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-// Configure multer storage
-const storage = multer.diskStorage({
-  destination: function(req, file, cb) {
-    cb(null, uploadsDir);
-  },
-  filename: function(req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const fileExtension = path.extname(file.originalname);
-    cb(null, file.fieldname + '-' + uniqueSuffix + fileExtension);
-  }
-});
+// Configure multer to use memory storage instead of disk storage
+const storage = multer.memoryStorage();
 
 // File filter function
 const fileFilter = (req, file, cb) => {
@@ -63,13 +47,14 @@ router.post('/', upload.array('statements', 5), async (req, res) => {
 
     const fileIds = [];
     
-    // Save file information to database
+    // Save file content and information to database
     for (const file of req.files) {
       const newStatement = new Statement({
-        filename: file.filename,
         originalFilename: file.originalname,
         fileType: path.extname(file.originalname).substring(1),
-        fileSize: file.size
+        fileSize: file.size,
+        fileContent: file.buffer, // Store the actual file content
+        mimeType: file.mimetype
       });
 
       const savedStatement = await newStatement.save();
@@ -84,6 +69,42 @@ router.post('/', upload.array('statements', 5), async (req, res) => {
   } catch (error) {
     console.error('Upload error:', error);
     res.status(500).json({ message: 'Server error during upload', error: error.message });
+  }
+});
+
+// Route to get list of uploaded files
+router.get('/', async (req, res) => {
+  try {
+    const statements = await Statement.find({}, {
+      fileContent: 0 // Exclude file content from list to reduce response size
+    }).sort({ uploadDate: -1 });
+    
+    res.status(200).json(statements);
+  } catch (error) {
+    console.error('Error fetching statements:', error);
+    res.status(500).json({ message: 'Server error fetching statements', error: error.message });
+  }
+});
+
+// Route to download a specific file
+router.get('/:id/download', async (req, res) => {
+  try {
+    const statement = await Statement.findById(req.params.id);
+    
+    if (!statement) {
+      return res.status(404).json({ message: 'File not found' });
+    }
+    
+    res.set({
+      'Content-Type': statement.mimeType,
+      'Content-Disposition': `attachment; filename="${statement.originalFilename}"`,
+      'Content-Length': statement.fileSize
+    });
+    
+    res.send(statement.fileContent);
+  } catch (error) {
+    console.error('Error downloading file:', error);
+    res.status(500).json({ message: 'Server error downloading file', error: error.message });
   }
 });
 

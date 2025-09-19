@@ -47,35 +47,31 @@ router.post('/', async (req, res) => {
       await statement.save();
       
       try {
-        // Get file path
-        const filePath = path.join(__dirname, '../uploads', statement.filename);
-        
-        // Check if file exists
-        if (!fs.existsSync(filePath)) {
-          throw new Error(`File not found: ${statement.filename}`);
+        // Check if file content exists
+        if (!statement.fileContent) {
+          throw new Error(`File content not found for: ${statement.originalFilename}`);
         }
         
         // Extract text based on file type
         let extractedText;
         
         if (statement.fileType === 'pdf') {
-          const pdfData = await readFile(filePath);
-          const pdfResult = await pdfParse(pdfData);
+          const pdfResult = await pdfParse(statement.fileContent);
           extractedText = pdfResult.text;
           
           if (!extractedText || extractedText.trim().length === 0) {
             throw new Error('No text could be extracted from PDF file');
           }
         } else if (statement.fileType === 'csv') {
-          extractedText = await processCSV(filePath);
+          extractedText = await processCSVFromBuffer(statement.fileContent);
         } else if (statement.fileType === 'txt') {
-          extractedText = await readFile(filePath, 'utf8');
+          extractedText = statement.fileContent.toString('utf8');
           
           if (!extractedText || extractedText.trim().length === 0) {
             throw new Error('Text file is empty or could not be read');
           }
         } else if (statement.fileType === 'xls' || statement.fileType === 'xlsx') {
-          extractedText = await processExcel(filePath);
+          extractedText = await processExcelFromBuffer(statement.fileContent);
         } else {
           throw new Error(`Unsupported file type: ${statement.fileType}`);
         }
@@ -131,6 +127,40 @@ async function processExcel(filePath) {
 
     // Read the Excel file
     const workbook = xlsx.readFile(filePath);
+    
+    // Get the first worksheet
+    const sheetName = workbook.SheetNames[0];
+    if (!sheetName) {
+      throw new Error('No worksheets found in Excel file');
+    }
+    
+    const worksheet = workbook.Sheets[sheetName];
+    
+    // Convert to JSON
+    const jsonData = xlsx.utils.sheet_to_json(worksheet, { 
+      header: 1, // Use array of arrays format
+      defval: '' // Default value for empty cells
+    });
+    
+    if (jsonData.length === 0) {
+      throw new Error('No data found in Excel file');
+    }
+    
+    // Convert to CSV-like format for AI processing
+    const csvText = jsonData.map(row => row.join(',')).join('\n');
+    
+    return csvText;
+  } catch (error) {
+    console.error('Excel processing error:', error);
+    throw new Error(`Failed to process Excel file: ${error.message}`);
+  }
+}
+
+// Process Excel file from buffer
+async function processExcelFromBuffer(buffer) {
+  try {
+    // Read the Excel file from buffer
+    const workbook = xlsx.read(buffer, { type: 'buffer' });
     
     // Get the first worksheet
     const sheetName = workbook.SheetNames[0];
@@ -235,6 +265,129 @@ async function processCSV(filePath) {
             let type = row[typeCol] || '';
             
             // Handle separate debit/credit columns
+            if (debitCol && creditCol) {
+              const debitAmount = parseFloat(row[debitCol] || 0);
+              const creditAmount = parseFloat(row[creditCol] || 0);
+              
+              if (debitAmount > 0) {
+                amount = -debitAmount; // Debits are negative
+                type = type || 'Debit';
+              } else if (creditAmount > 0) {
+                amount = creditAmount; // Credits are positive
+                type = type || 'Credit';
+              }
+            } else if (amountCol) {
+              amount = parseFloat(row[amountCol] || 0);
+              
+              // If type column exists, use it to determine sign
+              if (typeCol && type) {
+                if (/debit|expense|withdrawal/i.test(type) && amount > 0) {
+                  amount = -amount;
+                } else if (/credit|income|deposit/i.test(type) && amount < 0) {
+                  amount = Math.abs(amount);
+                }
+              }
+            }
+            
+            // Format as a readable line for processing
+            if (date && description && !isNaN(amount)) {
+              formattedText += `${date},${description},${amount},${type}\n`;
+            }
+          } catch (error) {
+            console.warn('Error processing CSV row:', row, error.message);
+          }
+        });
+        
+        if (formattedText.trim().length === 0) {
+          reject(new Error('No valid transaction data could be extracted from CSV'));
+          return;
+        }
+        
+        console.log('Formatted CSV text length:', formattedText.length);
+        resolve(formattedText);
+      })
+      .on('error', (error) => {
+        console.error('CSV processing error:', error);
+        reject(new Error(`Failed to process CSV file: ${error.message}`));
+      });
+  });
+}
+
+// Process CSV file from buffer
+async function processCSVFromBuffer(buffer) {
+  return new Promise((resolve, reject) => {
+    const results = [];
+    const { Readable } = require('stream');
+    
+    // Create a readable stream from buffer
+    const stream = Readable.from(buffer.toString('utf8'));
+    
+    stream
+      .pipe(csv({
+        skipEmptyLines: true,
+        skipLinesWithError: true
+      }))
+      .on('data', (data) => {
+        // Only add non-empty rows
+        if (Object.keys(data).length > 0) {
+          results.push(data);
+        }
+      })
+      .on('end', () => {
+        if (results.length === 0) {
+          reject(new Error('No valid data found in CSV file'));
+          return;
+        }
+        
+        // Convert CSV data to a format that works with both AI and regex processing
+        let formattedText = '';
+        
+        // Try to identify common CSV column patterns
+        const firstRow = results[0];
+        const columns = Object.keys(firstRow);
+        
+        // Common column name patterns
+        const dateColumns = columns.filter(col => 
+          /date|Date|DATE/i.test(col) || 
+          /transaction.*date/i.test(col)
+        );
+        const descColumns = columns.filter(col => 
+          /desc|description|Description|DESCRIPTION/i.test(col) ||
+          /transaction.*desc/i.test(col) ||
+          /memo|Memo|MEMO/i.test(col)
+        );
+        const amountColumns = columns.filter(col => 
+          /amount|Amount|AMOUNT/i.test(col) ||
+          /debit|Debit|DEBIT/i.test(col) ||
+          /credit|Credit|CREDIT/i.test(col)
+        );
+        const typeColumns = columns.filter(col => 
+          /type|Type|TYPE/i.test(col)
+        );
+        
+        // Use the first matching column for each type
+        const dateCol = dateColumns[0] || columns[0];
+        const descCol = descColumns[0] || columns[1];
+        const amountCol = amountColumns[0] || columns[2];
+        const typeCol = typeColumns[0];
+        
+        // Look for separate debit/credit columns
+        const debitCol = columns.find(col => /debit|Debit|DEBIT/i.test(col));
+        const creditCol = columns.find(col => /credit|Credit|CREDIT/i.test(col));
+        
+        console.log('CSV columns detected:', {
+          dateCol, descCol, amountCol, typeCol, debitCol, creditCol
+        });
+        
+        // Process each row
+        results.forEach(row => {
+          try {
+            const date = row[dateCol];
+            const description = row[descCol];
+            let amount = 0;
+            let type = row[typeCol] || '';
+            
+            // Handle different amount column configurations
             if (debitCol && creditCol) {
               const debitAmount = parseFloat(row[debitCol] || 0);
               const creditAmount = parseFloat(row[creditCol] || 0);
